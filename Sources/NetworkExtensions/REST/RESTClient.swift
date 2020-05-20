@@ -87,32 +87,6 @@ extension RESTClient {
     }
 }
 
-public typealias Promise<Output, Error: Swift.Error> = Deferred<Future<Output, Error>>
-extension Publishers.First {
-    public var promise: Promise<Output, Error> {
-        Deferred {
-            Future { callback in
-                // TODO: Custom Publisher to handle AnyCancellable properly
-                _ = self.sink(
-                    receiveCompletion: { completion in
-                        if case let .failure(error) = completion {
-                            callback(.failure(error))
-                        }
-                    },
-                    receiveValue: { value in
-                        callback(.success(value))
-                    }
-                )
-            }
-        }
-    }
-}
-extension Result {
-    public var promise: Promise<Success, Error> {
-        publisher.first().promise
-    }
-}
-
 extension RESTClient {
     /// Common request endpoint operation, can be used by methods that are strongly-typed to specific Endpoints
     ///
@@ -132,19 +106,54 @@ extension RESTClient {
         return
             createURLRequest(endpoint: endpoint, requestParser: requestParser)
                 .promise
-                .flatMap { urlRequest in
-                    scopedSession.dataTaskPublisher(for: urlRequest).mapError { $0 as Error }
+                .flatMap { urlRequest -> Publishers.MapError<TeufelDataTaskPublisher, Error> in
+                    scopedSession.dataTaskPublisher(request: urlRequest).mapError { $0 as Error }
                 }
                 .flatMap { taskResult -> Promise<(Data, HTTPURLResponse), Error> in
                     statusCodeHandler
                         .eval(taskResult.response as? HTTPURLResponse)
-                        .map { httpResponse in (taskResult.data, httpResponse) }
+                        .map { httpResponse in
+                            return (taskResult.data, httpResponse)
+                        }
                         .promise
                 }
                 .flatMap { data, httpResponse -> Promise<Value, Error> in
                     responseParser.parse(data, httpResponse).promise
                 }
                 .eraseToAnyPublisher()
+    }
+}
+
+extension RESTClient {
+    public func longPollingRequest<Body, Value, Endpoint: RESTEndpoint>(
+        endpoint: Endpoint,
+        requestParser: RequestParser<Body> = .ignore,
+        responseParser: ResponseParser<Value>
+    ) -> AnyPublisher<Value, Error> where Body == Endpoint.Body {
+        let statusCodeHandler = endpoint.statusCodeHandler ?? self.statusCodeHandler ?? .default
+        let scopedSession = session
+
+        return createURLRequest(endpoint: endpoint, requestParser: requestParser)
+            .promise
+            .map { urlRequest in
+                scopedSession
+                    .longPollingPublisher(for: urlRequest)
+                    .mapError { $0 as Error }
+            }
+            .switchToLatest()
+            .flatMap { taskResult -> Promise<(Data, HTTPURLResponse), Error> in
+                let (data, response) = taskResult
+                return statusCodeHandler
+                    .eval(response as? HTTPURLResponse)
+                    .map { httpResponse in
+                        return (data, httpResponse)
+                    }
+                    .promise
+            }
+            .flatMap { data, httpResponse -> Promise<Value, Error> in
+                responseParser.parse(data, httpResponse).promise
+            }
+            .eraseToAnyPublisher()
     }
 }
 

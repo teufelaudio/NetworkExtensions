@@ -45,7 +45,7 @@ extension ResponseParser {
     public static func json<X: Decodable>(_ type: X.Type, decoder: JSONDecoder = .init()) -> ResponseParser<X> {
         .init { data, _ in
             do {
-                let value = try JSONDecoder().decode(X.self, from: data)
+                let value = try decoder.decode(X.self, from: data)
                 return Result<X, Error>.success(value)
             } catch {
                 let jsonError = InvalidJsonError.init(error: error, data: String.init(data: data, encoding: .utf8) ?? "<nil>")
@@ -66,6 +66,13 @@ extension ResponseParser {
     }
 }
 
+extension ResponseParser where T == Data {
+    public static var identity: ResponseParser<Data> {
+        .init { data, _ in
+            Result<Data, Error>.success(data)
+        }
+    }
+}
 extension ResponseParser {
 
     /// Creates a `ResponseParser` that transforms the Data into plain string.
@@ -85,7 +92,7 @@ extension ResponseParser {
         .init { data, _ in
             Swift.print(String(data: data, encoding: encoding) ?? "")
             return Result<Void, Error>.success(())
-       }
+        }
     }
 
     public static func dump(using encoding: String.Encoding = .utf8) -> ResponseParser<Void> {

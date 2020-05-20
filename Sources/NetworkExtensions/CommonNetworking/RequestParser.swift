@@ -6,6 +6,7 @@
 //  Copyright © 2020 Lautsprecher Teufel GmbH. All rights reserved.
 //
 
+import Combine
 import Foundation
 
 /// A container for the `parse` function that takes `Data` and returns `Result<T, Error>`
@@ -26,7 +27,6 @@ public struct RequestParser<T> {
 }
 
 extension RequestParser where T: Encodable {
-
     /// Creates a `RequestParser` that uses JSON Encoder to transform any object that conforms to `Encodable` protocol into Data
     ///
     /// - Parameters:
@@ -35,7 +35,7 @@ extension RequestParser where T: Encodable {
     public static func json(encoder: JSONEncoder = .init()) -> RequestParser {
         return .init { object in
             do {
-                let data = try encoder.encode(AnyEncodable(object))
+                let data = try encoder.encode(object)
                 return .success(data)
             } catch {
                 return .failure(error)
@@ -54,6 +54,14 @@ extension RequestParser {
     }
 }
 
+extension RequestParser where T == Data {
+    /// Passes data directly into the request. No transformation done.
+    public static var identity: RequestParser {
+        return .init { data in
+            return Result<Data, Error>.success(data)
+        }
+    }
+}
 extension RequestParser {
 
     /// Creates a `RequestParser` that transforms a string into Data. If the input is not a string, the stringify function can be
