@@ -1,0 +1,26 @@
+//
+//  BypassCertificateValidation.swift
+//  NetworkExtensions
+//
+//  Created by Luiz Barbosa on 21.02.20.
+//  Copyright © 2020 Lautsprecher Teufel GmbH. All rights reserved.
+//
+
+import Foundation
+
+/// An `URLSessionDelegate` that trusts by default any certificate, even self-signed ones
+open class BypassCertificateValidation: NSObject, URLSessionDelegate {
+    open func urlSession(_ session: URLSession,
+                         didReceive challenge: URLAuthenticationChallenge,
+                         completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard let serverTrust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
+            let credential = URLCredential(trust: serverTrust)
+            completionHandler(.useCredential, credential)
+        }
+    }
+}
