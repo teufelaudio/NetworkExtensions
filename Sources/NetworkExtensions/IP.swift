@@ -22,21 +22,39 @@ public enum IP: Codable, CustomStringConvertible, Equatable, Hashable { // swift
     }
 
     public var description: String {
-        formattedIP
+        ipString
     }
 
-    public var formattedIP: String {
+    public var ipString: String {
         switch self {
         case let .ipv4(v4):
             return v4.rawValue.map(String.init).joined(separator: ".")
         case let .ipv6(v6):
-            return (0..<8)
+
+            let bigEndian: Bool = (1 == CFSwapInt32LittleToHost(1))
+            var address = (0..<8)
                 .map { index in
-                    v6.rawValue.range(start: index * 2, length: 2).readUInt16(bigEndian: false)
+                    v6.rawValue.range(start: index * 2, length: 2).readUInt16(bigEndian: bigEndian)
                 }
-                .map { $0 == 0 ? "" : String(format: "%llX", $0) }
+                .map { $0 == 0 ? "" : String(format: "%llx", $0) }
                 .joined(separator: ":")
-                .replacingOccurrences(of: ":::", with: "::")
+            while (address.contains(":::")) {
+                address = address.replacingOccurrences(of: ":::", with: "::")
+            }
+            if let ifName = v6.interface?.name {
+                return "\(address)%\(ifName)"
+            } else {
+                return "\(address)"
+            }
+        }
+    }
+
+    public var ipUrlString: String {
+        switch self {
+        case .ipv4:
+            return ipString
+        case .ipv6:
+            return "[\(ipString)]"
         }
     }
 
@@ -113,5 +131,19 @@ extension IP {
 
     public var isIPv6: Bool {
         self.ipv6 != nil
+    }
+}
+
+extension Array where Element == IP {
+
+    /// Picks the first IPv6 address over existing IPv4 addresses.
+    public var preferredAddress: IP? {
+        if let candidate = self.first(where: { $0.isIPv6 }) {
+            return candidate
+        }
+        if let candidate = self.first(where: { $0.isIPv4 }) {
+            return candidate
+        }
+        return nil
     }
 }
