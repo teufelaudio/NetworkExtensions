@@ -7,7 +7,7 @@ let package = Package(
     products: [.library(name: "NetworkExtensions", targets: ["NetworkExtensions"])],
     dependencies: [
         .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", .upToNextMajor(from: "0.1.4")),
-        .package(url: "https://github.com/teufelaudio/CombineLongPolling.git", .branch("master"))
+        .package(url: "https://github.com/teufelaudio/CombineLongPolling.git", .upToNextMajor(from: "0.1.0"))
     ],
     targets: [
         .target(
