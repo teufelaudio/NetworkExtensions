@@ -1,3 +1,3 @@
 # NetworkExtensions
 
-A description of this package.
+Useful extensions for networking code.
