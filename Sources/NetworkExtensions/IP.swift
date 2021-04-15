@@ -68,6 +68,14 @@ public enum IP: Codable, CustomStringConvertible, Equatable, Hashable { // swift
         }
     }
 
+    public init(_ ipv4: IPv4Address) {
+        self = .ipv4(ipv4)
+    }
+
+    public init(_ ipv6: IPv6Address) {
+        self = .ipv6(ipv6)
+    }
+
     public init?(_ data: Data) {
         if let addr = IPv6Address(data) {
             self = .ipv6(addr)
