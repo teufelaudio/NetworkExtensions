@@ -11,7 +11,7 @@ import CombineLongPolling
 import Foundation
 
 /// A protocol to abstract `URLSession`, it makes easier to mock requests and responses.
-public protocol URLSessionProtocol: LongPollingSessionProtocol {
+public protocol URLSessionProtocol {
     func dataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError>
     func dataTaskPromise(request: URLRequest) -> Promise<(data: Data, response: URLResponse), URLError>
     func resilientDataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError>
@@ -81,7 +81,6 @@ public final class URLSessionMock {
     public var timeoutIntervalForResource: TimeInterval = 1
     public var timeoutIntervalForRequest: TimeInterval = 1
     public var dataTaskPassthrough = PassthroughSubject<(data: Data, response: URLResponse), URLError>()
-    public var longPollingPassthrough = PassthroughSubject<(data: Data, response: URLResponse), URLError>()
 
     public lazy var dataTaskPromiseURL: (URL) -> Promise<(data: Data, response: URLResponse), URLError> = { url in
         self.dataTaskPassthrough.assertNonEmptyPromise()
@@ -95,16 +94,6 @@ public final class URLSessionMock {
     public lazy var resilientDataTaskPromiseURLRequest: (URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> = { request in
         self.dataTaskPassthrough.assertNonEmptyPromise()
     }
-    public lazy var longPollingPassthroughURL: (URL) -> LongPollingPublisher = { _ in
-        LongPollingPublisher(dataTaskPublisher: self.longPollingPassthrough)
-    }
-    public lazy var longPollingPassthroughURLRequest: (URLRequest) -> LongPollingPublisher = { _ in
-        LongPollingPublisher(dataTaskPublisher: self.longPollingPassthrough)
-    }
-    public lazy var longPollingPassthroughFromPublisher: (AnyPublisher<(data: Data, response: URLResponse), URLError>) -> LongPollingPublisher = { p in
-        LongPollingPublisher(dataTaskPublisher: p)
-    }
-
     public func serverSendsDataSuccess(
         data: Data = Data(),
         response: URLResponse = HTTPURLResponse(url: URL(string: "https://127.0.0.1")!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
@@ -116,19 +105,6 @@ public final class URLSessionMock {
 
     public func serverSendsDataFailure(_ error: URLError) {
         dataTaskPassthrough.send(completion: .failure(error))
-    }
-
-    public func serverSendsLongPollingSuccess(
-        data: Data = Data(),
-        response: URLResponse = HTTPURLResponse(url: URL(string: "https://127.0.0.1")!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
-        completes: Bool = false
-    ) {
-        longPollingPassthrough.send((data: data, response: response))
-        if completes { longPollingPassthrough.send(completion: .finished) }
-    }
-
-    public func serverSendsLongPollingFailure(_ error: URLError) {
-        longPollingPassthrough.send(completion: .failure(error))
     }
 }
 
@@ -146,22 +122,6 @@ extension URLSessionMock: URLSessionProtocol {
     }
     public func resilientDataTaskPromise(request: URLRequest) -> Publishers.Promise<(data: Data, response: URLResponse), URLError> {
         resilientDataTaskPromiseURLRequest(request)
-    }
-}
-
-/// Conformance to LongPollingSessionProtocol
-extension URLSessionMock {
-    public func longPollingPublisher(for url: URL) -> LongPollingPublisher {
-        longPollingPassthroughURL(url)
-    }
-
-    public func longPollingPublisher(for request: URLRequest) -> LongPollingPublisher {
-        longPollingPassthroughURLRequest(request)
-    }
-
-    public func longPollingPublisher<P>(for dataTaskPublisher: P) -> LongPollingPublisher
-    where P: Publisher, P.Failure == URLError, P.Output == (data: Data, response: URLResponse) {
-        longPollingPassthroughFromPublisher(dataTaskPublisher.eraseToAnyPublisher())
     }
 }
 #endif
