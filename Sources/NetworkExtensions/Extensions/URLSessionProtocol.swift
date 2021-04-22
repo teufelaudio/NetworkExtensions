@@ -7,7 +7,6 @@
 //
 
 import Combine
-import CombineLongPolling
 import Foundation
 
 /// A protocol to abstract `URLSession`, it makes easier to mock requests and responses.
