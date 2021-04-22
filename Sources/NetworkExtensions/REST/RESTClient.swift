@@ -29,6 +29,8 @@ import Foundation
 ///
 /// That way, any instance of HostRESTClient will be able to perform requests to the timer service running on the Host.
 public protocol RESTClient {
+    associatedtype Session
+
     /// Default port for this Network Client. Endpoints can override this port.
     var defaultPort: UInt16 { get }
 
@@ -45,7 +47,7 @@ public protocol RESTClient {
     var requiredQueryParameters: [QueryParameter] { get }
 
     /// URL Session to be used for all requests.
-    var session: URLSessionProtocol { get }
+    var session: Session { get }
 
     /// Status code handler that checks the HTTP response to decide if the status code is within the expected range.
     /// When nil, the default rule will be used
@@ -61,23 +63,6 @@ public protocol RESTClient {
 }
 
 extension RESTClient {
-    /// Initializes a new REST Client from the host (name/IP) and a boolean that indicates whether or not the certificate validation is bypassed.
-    /// If allowing any certificate is true, then a new URLSession will be created having the default configurations but with the delegate set to
-    /// `BypassCertificateValidation`,
-    /// otherwise the `URLSession.shared` will be used
-    ///
-    /// - Parameters:
-    ///   - host: host name or IP address
-    ///   - allowAnyCertificate: when true, it's bypass certificate validation (self-signed certificates will be allowed)
-    public init(hostname: String, allowAnyCertificate: Bool = false) {
-        if allowAnyCertificate {
-            let bypass = BypassCertificateValidation()
-            self.init(hostname: hostname, session: URLSession(configuration: URLSession.shared.configuration, delegate: bypass, delegateQueue: nil))
-        } else {
-            self.init(hostname: hostname, session: URLSession.shared)
-        }
-    }
-
     /// The protocol to be used when communicating with the server, it depends on SSL configuration.
     ///
     /// - Parameter ssl: using SSL or not
@@ -87,7 +72,7 @@ extension RESTClient {
     }
 }
 
-extension RESTClient {
+extension RESTClient where Session: URLSessionProtocol {
     /// Common request endpoint operation, can be used by methods that are strongly-typed to specific Endpoints
     ///
     /// - Parameters:
@@ -141,7 +126,7 @@ extension RESTClient {
 }
 
 extension URLRequestCreator {
-    init<Endpoint: RESTEndpoint>(endpoint: Endpoint, client: RESTClient) where Endpoint.Body == Body {
+    init<Endpoint: RESTEndpoint, Client: RESTClient>(endpoint: Endpoint, client: Client) where Endpoint.Body == Body {
         self.port = Int(endpoint.port.possibleValue ?? client.defaultPort)
         let useSSL = endpoint.useSSL ?? client.defaultUseSSL
         self.scheme = client.scheme(ssl: useSSL)

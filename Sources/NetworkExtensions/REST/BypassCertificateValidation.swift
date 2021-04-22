@@ -24,3 +24,12 @@ open class BypassCertificateValidation: NSObject, URLSessionDelegate {
         }
     }
 }
+
+extension URLSession {
+    /// Initializes a new URLSession ignoring when the certificate validation is bypassed.
+    /// A new URLSession will be created having the default configurations but with the delegate set to `BypassCertificateValidation`
+    ///
+    public static var sharedIgnoringCertificateValidation: URLSession {
+        URLSession(configuration: URLSession.shared.configuration, delegate: BypassCertificateValidation(), delegateQueue: nil)
+    }
+}
