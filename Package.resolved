@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "CombineLongPolling",
+        "repositoryURL": "https://github.com/teufelaudio/CombineLongPolling.git",
+        "state": {
+          "branch": null,
+          "revision": "e3029a5e174670875af9b5ccdc1fca94e682a82c",
+          "version": "0.1.1"
+        }
+      },
+      {
+        "package": "FoundationExtensions",
+        "repositoryURL": "https://github.com/teufelaudio/FoundationExtensions.git",
+        "state": {
+          "branch": null,
+          "revision": "c030f2323ca29b9c41ecc9d5f467dcc1bb1db17a",
+          "version": "0.1.5"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

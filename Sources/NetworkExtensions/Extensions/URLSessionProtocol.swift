@@ -12,19 +12,29 @@ import Foundation
 
 /// A protocol to abstract `URLSession`, it makes easier to mock requests and responses.
 public protocol URLSessionProtocol: LongPollingSessionProtocol {
-    func dataTaskPublisher(url: URL) -> TeufelDataTaskPublisher
-    func dataTaskPublisher(request: URLRequest) -> TeufelDataTaskPublisher
+    func dataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError>
+    func dataTaskPromise(request: URLRequest) -> Promise<(data: Data, response: URLResponse), URLError>
+    func resilientDataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError>
+    func resilientDataTaskPromise(request: URLRequest) -> Promise<(data: Data, response: URLResponse), URLError>
     var timeoutIntervalForResource: TimeInterval { get }
     var timeoutIntervalForRequest: TimeInterval { get }
 }
 
 extension URLSession: URLSessionProtocol {
-    public func dataTaskPublisher(url: URL) -> TeufelDataTaskPublisher {
-        dataTaskPublisher(request: URLRequest(url: url))
+    public func dataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError> {
+        dataTaskPublisher(for: url).promise
     }
 
-    public func dataTaskPublisher(request: URLRequest) -> TeufelDataTaskPublisher {
-        TeufelDataTaskPublisher(request: request, session: self)
+    public func dataTaskPromise(request: URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> {
+        dataTaskPublisher(for: request).promise
+    }
+
+    public func resilientDataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError> {
+        dataTaskPublisher(for: url).hardenAgainstATS()
+    }
+
+    public func resilientDataTaskPromise(request: URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> {
+        dataTaskPublisher(for: request).hardenAgainstATS()
     }
 
     public var timeoutIntervalForRequest: TimeInterval {
@@ -36,66 +46,17 @@ extension URLSession: URLSessionProtocol {
     }
 }
 
-/// Equivalent to URLSession.DataTaskPublisher, but mockable
-public struct TeufelDataTaskPublisher: Publisher {
-    public typealias Output = (data: Data, response: URLResponse)
-    public typealias Failure = URLError
-
-    public let request: URLRequest
-    public let session: URLSessionProtocol
-    private let internalPublisher: AnyPublisher<(data: Data, response: URLResponse), URLError>
-
-    public init(request: URLRequest, session: URLSession) {
-        self.request = request
-        self.session = session
-        self.internalPublisher = session.dataTaskPublisher(for: request).eraseToAnyPublisher()
-    }
-
-    public init<P: Publisher>(_ customPublisher: P, request: URLRequest, session: URLSessionProtocol)
-    where P.Failure == Failure, P.Output == Output {
-        self.request = request
-        self.session = session
-        self.internalPublisher = customPublisher.eraseToAnyPublisher()
-    }
-
-    public static func alwaysSucceeds(with output: (data: Data, response: URLResponse), request: URLRequest, session: URLSessionProtocol)
-    -> TeufelDataTaskPublisher {
-        TeufelDataTaskPublisher(Just(output).setFailureType(to: URLError.self), request: request, session: session)
-    }
-
-    public static func alwaysFails(with error: URLError, request: URLRequest, session: URLSessionProtocol) -> TeufelDataTaskPublisher {
-        TeufelDataTaskPublisher(Fail(error: error), request: request, session: session)
-    }
-
-    public func receive<S: Subscriber>(subscriber: S)
-    where S.Failure == Failure, S.Input == Output {
-        internalPublisher.subscribe(subscriber)
-    }
-}
-
-extension URLSessionProtocol {
-    public func resilientDataTaskPublisher(url: URL) -> AnyPublisher<(data: Data, response: URLResponse), URLError> {
-        self.dataTaskPublisher(url: url)
-            .hardenAgainstATS()
-    }
-
-    public func resilientDataTaskPublisher(request: URLRequest) -> AnyPublisher<(data: Data, response: URLResponse), URLError> {
-        self.dataTaskPublisher(request: request)
-            .hardenAgainstATS()
-    }
-}
-
-extension TeufelDataTaskPublisher {
-    public func hardenAgainstATS() -> AnyPublisher<(data: Data, response: URLResponse), URLError> {
-        self.catch { (urlError) -> TeufelDataTaskPublisher in
+extension URLSession.DataTaskPublisher {
+    fileprivate func hardenAgainstATS() -> Promise<(data: Data, response: URLResponse), URLError> {
+        promise.catch { (urlError) -> Promise<(data: Data, response: URLResponse), URLError> in
             // ATS blocks http-URLs. We catch the error and retry with an https-URL
             if urlError.code == URLError.appTransportSecurityRequiresSecureConnection, let url = self.request.url {
                 var atsRequest = self.request
                 atsRequest.url = Self.forceHttps(url: url)
-                return self.session.dataTaskPublisher(request: atsRequest)
+                return self.session.dataTaskPromise(request: atsRequest)
             }
-            return TeufelDataTaskPublisher.alwaysFails(with: urlError, request: self.request, session: self.session)
-        }.eraseToAnyPublisher()
+            return Promise(error: urlError)
+        }
     }
 
     /// Rewrites an http-URL to an https-URL.
@@ -122,11 +83,17 @@ public final class URLSessionMock {
     public var dataTaskPassthrough = PassthroughSubject<(data: Data, response: URLResponse), URLError>()
     public var longPollingPassthrough = PassthroughSubject<(data: Data, response: URLResponse), URLError>()
 
-    public lazy var dataTaskPublisherURL: (URL) -> TeufelDataTaskPublisher = { url in
-        TeufelDataTaskPublisher(self.dataTaskPassthrough, request: URLRequest(url: url), session: self)
+    public lazy var dataTaskPromiseURL: (URL) -> Promise<(data: Data, response: URLResponse), URLError> = { url in
+        self.dataTaskPassthrough.assertNonEmptyPromise()
     }
-    public lazy var dataTaskPublisherURLRequest: (URLRequest) -> TeufelDataTaskPublisher = { request in
-        TeufelDataTaskPublisher(self.dataTaskPassthrough, request: request, session: self)
+    public lazy var dataTaskPromiseURLRequest: (URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> = { request in
+        self.dataTaskPassthrough.assertNonEmptyPromise()
+    }
+    public lazy var resilientDataTaskPromiseURL: (URL) -> Promise<(data: Data, response: URLResponse), URLError> = { url in
+        self.dataTaskPassthrough.assertNonEmptyPromise()
+    }
+    public lazy var resilientDataTaskPromiseURLRequest: (URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> = { request in
+        self.dataTaskPassthrough.assertNonEmptyPromise()
     }
     public lazy var longPollingPassthroughURL: (URL) -> LongPollingPublisher = { _ in
         LongPollingPublisher(dataTaskPublisher: self.longPollingPassthrough)
@@ -167,11 +134,18 @@ public final class URLSessionMock {
 
 /// Conformance to URLSessionProtocol
 extension URLSessionMock: URLSessionProtocol {
-    public func dataTaskPublisher(url: URL) -> TeufelDataTaskPublisher {
-        dataTaskPublisherURL(url)
+
+    public func dataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError> {
+        dataTaskPromiseURL(url)
     }
-    public func dataTaskPublisher(request: URLRequest) -> TeufelDataTaskPublisher {
-        dataTaskPublisherURLRequest(request)
+    public func dataTaskPromise(request: URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> {
+        dataTaskPromiseURLRequest(request)
+    }
+    public func resilientDataTaskPromise(url: URL) -> Publishers.Promise<(data: Data, response: URLResponse), URLError> {
+        resilientDataTaskPromiseURL(url)
+    }
+    public func resilientDataTaskPromise(request: URLRequest) -> Publishers.Promise<(data: Data, response: URLResponse), URLError> {
+        resilientDataTaskPromiseURLRequest(request)
     }
 }
 

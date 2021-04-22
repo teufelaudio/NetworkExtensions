@@ -99,15 +99,15 @@ extension RESTClient {
         endpoint: Endpoint,
         requestParser: RequestParser<Body> = .ignore,
         responseParser: ResponseParser<Value>
-    ) -> AnyPublisher<Value, Error> where Body == Endpoint.Body {
+    ) -> Promise<Value, Error> where Body == Endpoint.Body {
         let statusCodeHandler = endpoint.statusCodeHandler ?? self.statusCodeHandler ?? .default
         let scopedSession = session
 
         return
             createURLRequest(endpoint: endpoint, requestParser: requestParser)
                 .promise
-                .flatMap { urlRequest -> Publishers.MapError<TeufelDataTaskPublisher, Error> in
-                    scopedSession.dataTaskPublisher(request: urlRequest).mapError { $0 as Error }
+                .flatMap { urlRequest -> Promise<(data: Data, response: URLResponse), Error> in
+                    scopedSession.dataTaskPromise(request: urlRequest).mapError { $0 as Error }
                 }
                 .flatMap { taskResult -> Promise<(Data, HTTPURLResponse), Error> in
                     statusCodeHandler
@@ -120,7 +120,6 @@ extension RESTClient {
                 .flatMap { data, httpResponse -> Promise<Value, Error> in
                     responseParser.parse(data, httpResponse).promise
                 }
-                .eraseToAnyPublisher()
     }
 }
 
