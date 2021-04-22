@@ -30,6 +30,7 @@ public enum IP: Codable, CustomStringConvertible, Equatable, Hashable { // swift
         case let .ipv4(v4):
             return v4.rawValue.map(String.init).joined(separator: ".")
         case let .ipv6(v6):
+
             let bigEndian: Bool = (1 == CFSwapInt32LittleToHost(1))
             var address = (0..<8)
                 .map { index in
@@ -40,9 +41,6 @@ public enum IP: Codable, CustomStringConvertible, Equatable, Hashable { // swift
             while (address.contains(":::")) {
                 address = address.replacingOccurrences(of: ":::", with: "::")
             }
-            dump(v6)
-            dump(v6.interface)
-            dump(v6.interface?.name)
             if let ifName = v6.interface?.name {
                 return "\(address)%\(ifName)"
             } else {
