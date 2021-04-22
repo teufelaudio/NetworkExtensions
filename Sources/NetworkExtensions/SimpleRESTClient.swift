@@ -69,30 +69,4 @@ open class SimpleRESTClient: RESTClient {
         self.requiredHeaders = requiredHeaders
         self.requiredQueryParameters = requiredQueryParameters
     }
-
-    /// Initializes a new REST Client with all the available parameters and a boolean that indicates whether or not the certificate validation is
-    /// bypassed.
-    /// If allowing any certificate is true, then a new URLSession will be created having the default configurations but with the delegate set to
-    /// `BypassCertificateValidation`,
-    /// otherwise the `URLSession.shared` will be used
-    ///
-    /// - Parameters:
-    ///   - host: host name or IP address
-    ///   - allowAnyCertificate: when true, it's bypass certificate validation (self-signed certificates will be allowed)
-    ///   - defaultPort: HTTP port to be used by default, when endpoint doesn't specify one
-    ///   - defaultUseSSL: whether or not to use SSL by default, when endpoint doesn't specify that
-    ///   - requiredHeaders: HTTP headers required by the host for all requests, regardless of the endpoint
-    ///   - requiredQueryParameters: query parameters (URL parameters) required by the host to be sent in any request, regardless of the endpoint.
-    public convenience init(hostname: String,
-                            allowAnyCertificate: Bool = false,
-                            defaultPort: UInt16,
-                            defaultUseSSL: Bool = true,
-                            requiredHeaders: [String: String] = [:],
-                            requiredQueryParameters: [QueryParameter] = []) {
-        self.init(hostname: hostname, allowAnyCertificate: allowAnyCertificate)
-        self.defaultPort = defaultPort
-        self.defaultUseSSL = defaultUseSSL
-        self.requiredHeaders = requiredHeaders
-        self.requiredQueryParameters = requiredQueryParameters
-    }
 }
