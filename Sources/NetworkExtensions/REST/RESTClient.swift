@@ -108,7 +108,7 @@ extension RESTClient where Session: URLSessionProtocol {
     }
 }
 
-extension RESTClient where Session: URLSessionProtocol {
+extension RESTClient {
 
     /// Create an failable URLRequest given an Endpoint and a request body parser.
     ///
