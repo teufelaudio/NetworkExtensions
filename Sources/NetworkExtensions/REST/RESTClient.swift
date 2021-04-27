@@ -53,13 +53,13 @@ public protocol RESTClient {
     /// When nil, the default rule will be used
     var statusCodeHandler: StatusCodeHandler? { get }
 
-    /// Initializes a new REST Client from the hostname (or IP address) and an URLSessionProtocol to be used. In this case, any rule regarding
-    /// certificates should be done by whom provided that URLSessionProtocol.
+    /// Initializes a new REST Client from the hostname (or IP address) and an Session to be used. In this case, any rule regarding
+    /// certificates should be done by whom provided that Session.
     ///
     /// - Parameters:
     ///   - hostname: hostname or IP address
     ///   - session: a URL Session to be used in all requests
-    init(hostname: String, session: URLSessionProtocol)
+    init(hostname: String, session: Session)
 }
 
 extension RESTClient {
