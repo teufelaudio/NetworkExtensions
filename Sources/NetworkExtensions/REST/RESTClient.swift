@@ -29,8 +29,6 @@ import Foundation
 ///
 /// That way, any instance of HostRESTClient will be able to perform requests to the timer service running on the Host.
 public protocol RESTClient {
-    associatedtype Session
-
     /// Default port for this Network Client. Endpoints can override this port.
     var defaultPort: UInt16 { get }
 
@@ -47,7 +45,7 @@ public protocol RESTClient {
     var requiredQueryParameters: [QueryParameter] { get }
 
     /// URL Session to be used for all requests.
-    var session: Session { get }
+    var session: URLSessionProtocol { get }
 
     /// Status code handler that checks the HTTP response to decide if the status code is within the expected range.
     /// When nil, the default rule will be used
@@ -59,7 +57,7 @@ public protocol RESTClient {
     /// - Parameters:
     ///   - hostname: hostname or IP address
     ///   - session: a URL Session to be used in all requests
-    init(hostname: String, session: Session)
+    init(hostname: String, session: URLSessionProtocol)
 }
 
 extension RESTClient {
@@ -72,7 +70,7 @@ extension RESTClient {
     }
 }
 
-extension RESTClient where Session: URLSessionProtocol {
+extension RESTClient {
     /// Common request endpoint operation, can be used by methods that are strongly-typed to specific Endpoints
     ///
     /// - Parameters:
