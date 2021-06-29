@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.iOS(.v13), .macOS(.v10_15), .tvOS(.v13), .watchOS(.v6)],
     products: [
         .library(name: "NetworkExtensions", targets: ["NetworkExtensions"]),
-        .library(name: "NetworkExtensionsAllStatic", targets: ["NetworkExtensions"])
+        .library(name: "NetworkExtensionsAllStatic", targets: ["NetworkExtensionsAllStatic"])
     ],
     dependencies: [
         .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", .upToNextMajor(from: "0.1.7"))
