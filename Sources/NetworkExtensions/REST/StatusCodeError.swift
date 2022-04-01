@@ -13,10 +13,12 @@ import Foundation
 public struct StatusCodeError: Error {
     public let httpResponse: HTTPURLResponse?
     public let statusCode: Int
+    public let data: Data?
 
-    public init(statusCode: Int, httpResponse: HTTPURLResponse?) {
+    public init(statusCode: Int, httpResponse: HTTPURLResponse?, data: Data?) {
         self.httpResponse = httpResponse
         self.statusCode = statusCode
+        self.data = data
     }
 }
 

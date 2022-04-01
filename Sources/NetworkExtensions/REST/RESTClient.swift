@@ -94,7 +94,7 @@ extension RESTClient {
                 }
                 .flatMap { taskResult -> Promise<(Data, HTTPURLResponse), Error> in
                     statusCodeHandler
-                        .eval(taskResult.response as? HTTPURLResponse)
+                        .eval(taskResult.response as? HTTPURLResponse, taskResult.data)
                         .map { httpResponse in
                             return (taskResult.data, httpResponse)
                         }
