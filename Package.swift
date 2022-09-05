@@ -6,10 +6,10 @@ let package = Package(
     platforms: [.iOS(.v13), .macOS(.v10_15), .tvOS(.v13), .watchOS(.v6)],
     products: [
         .library(name: "NetworkExtensions", targets: ["NetworkExtensions"]),
-        .library(name: "NetworkExtensionsAllStatic", targets: ["NetworkExtensionsAllStatic"])
+        .library(name: "NetworkExtensionsDynamic", targets: ["NetworkExtensions"])
     ],
     dependencies: [
-        .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", .upToNextMajor(from: "0.1.12"))
+        .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", .exact("0.1.17"))
     ],
     targets: [
         .target(
@@ -17,8 +17,8 @@ let package = Package(
             dependencies: [.product(name: "FoundationExtensions", package: "FoundationExtensions")]
         ),
         .target(
-            name: "NetworkExtensionsAllStatic",
-            dependencies: [.product(name: "FoundationExtensionsStatic", package: "FoundationExtensions")]
+            name: "NetworkExtensionsDynamic",
+            dependencies: [.product(name: "FoundationExtensionsDynamic", package: "FoundationExtensions")]
         ),
         .testTarget(name: "NetworkExtensionsTests", dependencies: ["NetworkExtensions"])
     ]
