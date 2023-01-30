@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "NetworkExtensionsDynamic", targets: ["NetworkExtensions"])
     ],
     dependencies: [
-        .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", .exact("0.1.20"))
+        .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", .upToNextMajor(from: "0.2.0"))
     ],
     targets: [
         .target(
