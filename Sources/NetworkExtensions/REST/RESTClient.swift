@@ -8,6 +8,7 @@
 
 import Combine
 import Foundation
+import FoundationExtensions
 
 /// REST Client protocol, it's meant to be implemented to conform with specific REST servers.
 /// The implementations also should contain all possible actions in method extensions, so for example given
