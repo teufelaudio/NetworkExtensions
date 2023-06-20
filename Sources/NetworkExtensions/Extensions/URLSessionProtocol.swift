@@ -8,6 +8,7 @@
 
 import Combine
 import Foundation
+import FoundationExtensions
 
 /// A protocol to abstract `URLSession`, it makes easier to mock requests and responses.
 public protocol URLSessionProtocol {
@@ -82,16 +83,16 @@ public final class URLSessionMock {
     public var dataTaskPassthrough = PassthroughSubject<(data: Data, response: URLResponse), URLError>()
 
     public lazy var dataTaskPromiseURL: (URL) -> Promise<(data: Data, response: URLResponse), URLError> = { url in
-        self.dataTaskPassthrough.assertNonEmptyPromise()
+        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
     }
     public lazy var dataTaskPromiseURLRequest: (URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> = { request in
-        self.dataTaskPassthrough.assertNonEmptyPromise()
+        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
     }
     public lazy var resilientDataTaskPromiseURL: (URL) -> Promise<(data: Data, response: URLResponse), URLError> = { url in
-        self.dataTaskPassthrough.assertNonEmptyPromise()
+        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
     }
     public lazy var resilientDataTaskPromiseURLRequest: (URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> = { request in
-        self.dataTaskPassthrough.assertNonEmptyPromise()
+        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
     }
     public func serverSendsDataSuccess(
         data: Data = Data(),
