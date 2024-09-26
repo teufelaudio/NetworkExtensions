@@ -9,8 +9,8 @@
 import Foundation
 
 /// An `URLSessionDelegate` that trusts by default any certificate, even self-signed ones
-open class BypassCertificateValidation: NSObject, URLSessionDelegate {
-    open func urlSession(_ session: URLSession,
+public final class BypassCertificateValidation: NSObject, URLSessionDelegate {
+    public func urlSession(_ session: URLSession,
                          didReceive challenge: URLAuthenticationChallenge,
                          completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         guard let serverTrust = challenge.protectionSpace.serverTrust else {
