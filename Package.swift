@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "NetworkExtensionsDynamic", targets: ["NetworkExtensions"])
     ],
     dependencies: [
-        .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", .upToNextMajor(from: "0.2.0"))
+        .package(url: "https://github.com/teufelaudio/FoundationExtensions.git", from: "1.0.0")
     ],
     targets: [
         .target(
