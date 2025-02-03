@@ -22,11 +22,11 @@ public protocol URLSessionProtocol {
 
 extension URLSession: URLSessionProtocol {
     public func dataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError> {
-        dataTaskPublisher(for: url).promise
+        dataTaskPublisher(for: url).eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
 
     public func dataTaskPromise(request: URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> {
-        dataTaskPublisher(for: request).promise
+        dataTaskPublisher(for: request).eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
 
     public func resilientDataTaskPromise(url: URL) -> Promise<(data: Data, response: URLResponse), URLError> {
@@ -48,7 +48,7 @@ extension URLSession: URLSessionProtocol {
 
 extension URLSession.DataTaskPublisher {
     fileprivate func hardenAgainstATS() -> Promise<(data: Data, response: URLResponse), URLError> {
-        promise.catch { (urlError) -> Promise<(data: Data, response: URLResponse), URLError> in
+        `catch` { urlError in
             // ATS blocks http-URLs. We catch the error and retry with an https-URL
             if urlError.code == URLError.appTransportSecurityRequiresSecureConnection, let url = self.request.url {
                 var atsRequest = self.request
@@ -57,6 +57,7 @@ extension URLSession.DataTaskPublisher {
             }
             return Promise(error: urlError)
         }
+        .eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
 
     /// Rewrites an http-URL to an https-URL.
@@ -83,16 +84,16 @@ public final class URLSessionMock {
     public var dataTaskPassthrough = PassthroughSubject<(data: Data, response: URLResponse), URLError>()
 
     public lazy var dataTaskPromiseURL: (URL) -> Promise<(data: Data, response: URLResponse), URLError> = { url in
-        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
+        self.dataTaskPassthrough.eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
     public lazy var dataTaskPromiseURLRequest: (URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> = { request in
-        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
+        self.dataTaskPassthrough.eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
     public lazy var resilientDataTaskPromiseURL: (URL) -> Promise<(data: Data, response: URLResponse), URLError> = { url in
-        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
+        self.dataTaskPassthrough.eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
     public lazy var resilientDataTaskPromiseURLRequest: (URLRequest) -> Promise<(data: Data, response: URLResponse), URLError> = { request in
-        self.dataTaskPassthrough.promise(onEmpty: { .init(error: URLError(URLError.Code.cancelled)) })
+        self.dataTaskPassthrough.eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
     public func serverSendsDataSuccess(
         data: Data = Data(),
