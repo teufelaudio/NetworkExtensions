@@ -48,16 +48,16 @@ extension URLSession: URLSessionProtocol {
 
 extension URLSession.DataTaskPublisher {
     fileprivate func hardenAgainstATS() -> Promise<(data: Data, response: URLResponse), URLError> {
-        `catch` { urlError in
-            // ATS blocks http-URLs. We catch the error and retry with an https-URL
-            if urlError.code == URLError.appTransportSecurityRequiresSecureConnection, let url = self.request.url {
-                var atsRequest = self.request
-                atsRequest.url = Self.forceHttps(url: url)
-                return self.session.dataTaskPromise(request: atsRequest)
+        eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
+            .catch { urlError in
+                // ATS blocks http-URLs. We catch the error and retry with an https-URL
+                if urlError.code == URLError.appTransportSecurityRequiresSecureConnection, let url = self.request.url {
+                    var atsRequest = self.request
+                    atsRequest.url = Self.forceHttps(url: url)
+                    return self.session.dataTaskPromise(request: atsRequest)
+                }
+                return Promise(error: urlError)
             }
-            return Promise(error: urlError)
-        }
-        .eraseToPromise(onEmpty: .failure(URLError(.cancelled)))
     }
 
     /// Rewrites an http-URL to an https-URL.
